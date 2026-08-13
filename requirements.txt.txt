@@ -1,0 +1,6 @@
+python-telegram-bot>=20.0
+youtube-transcript-api
+google-generativeai
+edge-tts
+yt-dlp
+ffmpeg-python
