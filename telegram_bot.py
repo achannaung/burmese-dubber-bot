@@ -197,14 +197,26 @@ async def process_video(update, context, youtube_url: str, voice: str, chat_id: 
     start_time = time.time()
     
     try:
-        # ── STEP 1: Transcript ──
+        # ── STEP 1: Extract Transcript ──
         await edit_progress(context, chat_id, progress_msg, "📋 Step 1/5: Extracting transcript...")
         from youtube_transcript_api import YouTubeTranscriptApi
         
-        transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+        # youtube-transcript-api v1.2.4 API
+        ytt_api = YouTubeTranscriptApi()
+        fetched = ytt_api.fetch(video_id)
+        
+        # Convert snippets to list of dicts
+        transcript_list = []
+        for snippet in fetched.snippets:
+            transcript_list.append({
+                "text": snippet.text,
+                "start": snippet.start,
+                "duration": snippet.duration
+            })
+        
         full_text = " ".join([seg["text"] for seg in transcript_list])
         
-        # Truncate if too long (>15 min worth)
+        # Check duration
         total_duration = transcript_list[-1]["start"] + transcript_list[-1].get("duration", 0)
         if total_duration > 15 * 60:
             await context.bot.send_message(
@@ -223,7 +235,7 @@ async def process_video(update, context, youtube_url: str, voice: str, chat_id: 
         await edit_progress(
             context, chat_id, progress_msg,
             f"✅ Step 1/5: Transcript extracted ({len(transcript_list)} segments, {len(full_text)} chars)"
-        )
+        )        
         
         # ── STEP 2: Translate ──
         await edit_progress(context, chat_id, progress_msg, "🌐 Step 2/5: Translating to Burmese...")
